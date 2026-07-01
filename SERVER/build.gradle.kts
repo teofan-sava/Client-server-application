@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm") version "2.3.21"
+    id("application")
 }
 
 group = "org.example"
@@ -9,8 +10,12 @@ repositories {
     mavenCentral()
 }
 
+application {
+    mainClass.set("ServerKt")
+}
+
 dependencies {
-    testImplementation(kotlin("test"))
+    implementation(kotlin("stdlib-jdk8"))
 }
 
 kotlin {

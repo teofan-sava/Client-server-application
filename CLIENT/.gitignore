@@ -3,6 +3,8 @@ node_modules/
 dist/
 build/
 .env.local
+.gradle
+gradle/wrapper
 
 # Log files
 npm-debug.log*
