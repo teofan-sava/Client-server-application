@@ -1,0 +1,7 @@
+# Gradle build outputs
+.gradle/
+build/
+
+# Local configuration files
+.env
+*.local
