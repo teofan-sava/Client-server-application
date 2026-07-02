@@ -12,10 +12,13 @@ repositories {
 
 application {
     mainClass.set("ServerKt")
+    applicationDefaultJvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
 }
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
+    implementation("com.github.oshi:oshi-core:7.3.2")
+    implementation("org.slf4j:slf4j-simple:2.0.18")
 }
 
 kotlin {
