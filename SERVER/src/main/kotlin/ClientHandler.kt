@@ -1,13 +1,13 @@
-import oshi.SystemInfo
 import java.io.IOException
 import java.io.PrintWriter
 import java.net.Socket
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.TimeUnit
+import java.net.http.HttpClient
 
 fun handleClient(socket: Socket) {
 
     val clientId = socket.remoteSocketAddress.toString()
+    val httpClient = HttpClient.newHttpClient()
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
 
     println("[Client $clientId] connected to the server")
@@ -25,14 +25,37 @@ fun handleClient(socket: Socket) {
 
             when (command) {
                 "HELP" -> sendMenu(output)
+
                 "TIME" -> {
-                    output.println("Current server date and time: ${java.time.LocalDate.now()}, ${java.time.LocalTime.now().format(timeFormatter)}\n")
+                    output.println(
+                        "Current server date and time: ${java.time.LocalDate.now()}, ${
+                            java.time.LocalTime.now().format(timeFormatter)
+                        }\n"
+                    )
                 }
+
                 "OS" -> osInfo(output)
+
+                command.takeIf { it.startsWith("WEATHER") } -> {
+                    val parts = rawLine.trim().split("\\s+".toRegex())
+                    if (parts.size < 3) {
+                        output.println("Missing parameters. Format: WEATHER <lat> <long>\n")
+                        continue
+                    }
+
+                    val lat = parts[1]
+                    val long = parts[2]
+                    println("[Client $clientId] Requested weather for Lat: $lat, Long: $long")
+
+                    val weatherInfo = weatherInfo(httpClient, lat, long)
+                    output.println(weatherInfo)
+                }
+
                 "EXIT" -> {
                     output.println("Disconnecting. Goodbye!")
                     break
                 }
+
                 else -> {
                     output.println("Unknown command $rawLine. Type 'HELP' for menu\n")
                 }
@@ -44,42 +67,4 @@ fun handleClient(socket: Socket) {
         socket.close()
         println("[Client $clientId] Connection closed")
     }
-}
-
-fun osInfo(output: PrintWriter) {
-
-    val si = SystemInfo()
-    val os = si.operatingSystem
-    val hardware = si.hardware
-    val processor = hardware.processor
-    val memory = hardware.memory
-    val uptimeSeconds = os.systemUptime
-
-    output.println("=== OPERATING SYSTEM INFORMATION ===")
-    output.println("OS Family: ${os.family}")
-    output.println("Manufacturer: ${os.manufacturer}")
-    output.println("Version :${os.versionInfo}")
-
-    val days = TimeUnit.SECONDS.toDays(uptimeSeconds)
-    val hours = TimeUnit.SECONDS.toHours(uptimeSeconds) % 24
-    val minutes = TimeUnit.SECONDS.toMinutes(uptimeSeconds) % 60
-    output.println("System uptime: $days days, $hours hours, $minutes minutes")
-
-    val availableMemGB = memory.available.toDouble() / (1024 * 1024 * 1024)
-    val totalMemGB = memory.total.toDouble() / (1024 * 1024 * 1024)
-    output.printf("Available Memory: %.2f GB / %.2f GB\n", availableMemGB, totalMemGB)
-
-    output.println("CPU type: ${processor.processorIdentifier.name}")
-    output.println("CPU Physical Cores: ${processor.physicalProcessorCount}")
-    output.println("CPU Logical Cores: ${processor.logicalProcessorCount}\n")
-}
-
-fun sendMenu(output: PrintWriter) {
-    output.println("\t=== SERVER API MENU ===")
-    output.println("SUPPORTED COMMANDS:")
-    output.println("  HELP      Display the menu again")
-    output.println("  TIME      Display the server's current time")
-    output.println("  OS        Display the server's OS details")
-    output.println("  EXIT      Close the connection")
-    output.println("-----------------------------------------------\n")
 }
