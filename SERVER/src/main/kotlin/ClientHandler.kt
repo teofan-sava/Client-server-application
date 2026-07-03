@@ -37,18 +37,33 @@ fun handleClient(socket: Socket) {
                 "OS" -> osInfo(output)
 
                 command.takeIf { it.startsWith("WEATHER") } -> {
-                    val parts = rawLine.trim().split("\\s+".toRegex())
-                    if (parts.size < 3) {
-                        output.println("Missing parameters. Format: WEATHER <lat> <long>\n")
+                    val regex = """("[^"]*")|\S+""".toRegex()
+                    val parts = regex.findAll(rawLine).map { it.value }.toList()
+
+                    if (parts.size == 3) {
+
+                        if ((parts[1].toDoubleOrNull() != null) && (parts[2].toDoubleOrNull() != null)) {
+                            val lat = parts[1]
+                            val long = parts[2]
+                            println("[Client $clientId] Requested weather for Lat: $lat, Long: $long")
+
+                            val weatherInfo = weatherInfo(httpClient, lat, long)
+                            output.println(weatherInfo)
+                        } else {
+                            output.println("Latitude and longitude can only be numbers.\n")
+                        }
+                    } else if (parts.size == 2) {
+
+                        val city = parts[1]
+                        println("[Client $clientId] Requested weather for city: $city")
+
+                        val weatherInfo = weatherInfo(httpClient, city)
+                        output.println(weatherInfo)
+                    } else {
+
+                        output.println("Wrong parameters. Format: WEATHER <lat> <long> || WEATHER \"<city>\"\n")
                         continue
                     }
-
-                    val lat = parts[1]
-                    val long = parts[2]
-                    println("[Client $clientId] Requested weather for Lat: $lat, Long: $long")
-
-                    val weatherInfo = weatherInfo(httpClient, lat, long)
-                    output.println(weatherInfo)
                 }
 
                 "EXIT" -> {

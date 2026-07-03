@@ -6,3 +6,4 @@ gradle/wrapper
 # Local configuration files
 .env
 *.local
+API_KEY.txt
