@@ -20,7 +20,10 @@ fun handleClient(socket: Socket) {
 
         while (true) {
             val rawLine = input.readLine() ?: break
-            val command = rawLine.trim().uppercase()
+            val parts = rawLine.trim().split(Regex("\\s+"), limit = 2)
+            val command = parts[0].uppercase()
+            val argument = if (parts.size > 1) parts[1] else ""
+
             println("[Client $clientId] Requested command: $command")
 
             when (command) {
@@ -36,33 +39,17 @@ fun handleClient(socket: Socket) {
 
                 "OS" -> osInfo(output)
 
-                command.takeIf { it.startsWith("WEATHER") } -> {
+                "WEATHER" -> {
                     val regex = """("[^"]*")|\S+""".toRegex()
                     val parts = regex.findAll(rawLine).map { it.value }.toList()
+                    handleWeatherInput(parts, clientId, httpClient, output)
+                }
 
-                    if (parts.size == 3) {
-
-                        if ((parts[1].toDoubleOrNull() != null) && (parts[2].toDoubleOrNull() != null)) {
-                            val lat = parts[1]
-                            val long = parts[2]
-                            println("[Client $clientId] Requested weather for Lat: $lat, Long: $long")
-
-                            val weatherInfo = weatherInfo(httpClient, lat, long)
-                            output.println(weatherInfo)
-                        } else {
-                            output.println("Latitude and longitude can only be numbers.\n")
-                        }
-                    } else if (parts.size == 2) {
-
-                        val city = parts[1]
-                        println("[Client $clientId] Requested weather for city: $city")
-
-                        val weatherInfo = weatherInfo(httpClient, city)
-                        output.println(weatherInfo)
+                "ZIP" -> {
+                    if (argument.isNotBlank()) {
+                        handleZip(argument, output)
                     } else {
-
-                        output.println("Wrong parameters. Format: WEATHER <lat> <long> || WEATHER \"<city>\"\n")
-                        continue
+                        output.println("You must provide a path")
                     }
                 }
 

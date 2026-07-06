@@ -8,6 +8,7 @@ fun sendMenu(output: PrintWriter) {
     output.println("  OS                    Display the server's OS details")
     output.println("  WEATHER <lat> <long>  Display the current weather")
     output.println("  WEATHER <city>        Display the current weather")
+    output.println("  ZIP <path>      Unpacking the archive and executing")
     output.println("  EXIT                  Close the connection")
-    output.println("-------------------------------------------------------------\n")
+    output.println("---------------------------------------------------------------\n")
 }
