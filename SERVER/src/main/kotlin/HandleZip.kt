@@ -1,9 +1,63 @@
+import java.io.DataInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.PrintWriter
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.zip.ZipInputStream
+
+fun handleZip(dataIn: DataInputStream, fileSize: Long, output: PrintWriter) {
+    val tempDirectory = Files.createTempDirectory("compile_")
+    val zipFile = File(tempDirectory.toFile(), "uploaded.zip")
+
+    try {
+        FileOutputStream(zipFile).use { fos ->
+            val buffer = ByteArray(4096)
+            var bytesLeft = fileSize
+            while (bytesLeft > 0) {
+                val toRead = minOf(buffer.size.toLong(), bytesLeft).toInt()
+                val read = dataIn.read(buffer, 0, toRead)
+                if (read == -1) throw java.io.EOFException("Network disconnected while uploading ZIP")
+                fos.write(buffer, 0, read)
+                bytesLeft -= read
+            }
+        }
+
+        unzip(zipFile, tempDirectory)
+
+        val workingDir = tempDirectory.toFile()
+
+        val compileProcess = ProcessBuilder("sh", "-c", "gcc *.c -o executable")
+            .directory(workingDir)
+            .redirectErrorStream(true)   // merge stderr into stdout
+            .start()
+
+        val compileExit = compileProcess.waitFor()
+
+        if (compileExit == 0) {
+            val runProcess = ProcessBuilder("./executable")
+                .directory(workingDir)
+                .redirectErrorStream(true)
+                .start()
+            runProcess.waitFor()
+
+            val execOutput = runProcess.inputStream.bufferedReader().readText()
+
+            output.println("\n--- COMPILATION SUCCESSFUL ---")
+            output.println("  --- EXECUTION OUTPUT ---")
+            output.println(execOutput.ifBlank { "No output generated" })
+        } else {
+            val errorOutput = compileProcess.inputStream.bufferedReader().readText()
+            output.println("--- COMPILATION UNSUCCESSFUL ---")
+            output.println(errorOutput)
+        }
+    } catch (e: Exception) {
+        output.println("ERROR: Server encountered an issue handling the ZIP data pipeline.")
+        println("ERROR: ${e.message}")
+    } finally {
+        tempDirectory.toFile().deleteRecursively()
+    }
+}
 
 fun unzip(zipFile: File, tempDirectory: Path) {
     ZipInputStream(zipFile.inputStream()).use { zis ->
@@ -18,48 +72,5 @@ fun unzip(zipFile: File, tempDirectory: Path) {
             zis.closeEntry()
             entry = zis.nextEntry
         }
-    }
-}
-
-fun handleZip(zipPath: String, output: PrintWriter) {
-    val zipFile = File(zipPath)
-
-    if (!zipFile.exists()) {
-        output.println("ERROR: Nothing exists at $zipPath. Path should look like: '/home/name/path_to_zip_archive'.\n")
-        return
-    }
-
-    if (!zipFile.isFile) {
-        output.println("ERROR: The path exists, but it doesn't point to a .zip archive file.\n")
-        return
-    }
-
-    output.println("Server received path. Processing...")
-    val tempDirectory = Files.createTempDirectory("compile_")
-
-    try {
-        unzip(zipFile, tempDirectory)
-
-        val compileProcess = ProcessBuilder("sh", "-c", "gcc *.c -o executable").directory(tempDirectory.toFile()).start()
-        compileProcess.waitFor()
-
-        if (compileProcess.exitValue() == 0) {
-            val runProcess = ProcessBuilder("./executable").directory(tempDirectory.toFile()).start()
-            runProcess.waitFor()
-            val execOutput = runProcess.inputStream.bufferedReader().readText()
-
-            output.println("--- COMPILATION SUCCESSFUL ---")
-            output.println("  --- EXECUTION OUTPUT ---")
-            output.println(execOutput.ifBlank { "No output generated\n" })
-        } else {
-            val errorLog = compileProcess.errorStream.bufferedReader().readText()
-            output.println("--- COMPILATION UNSUCCESSFUL ---")
-            output.println(errorLog)
-        }
-    } catch (e: Exception) {
-        output.println("ERROR: Server encountered an issue")
-        println("ERROR: ${e.message}")
-    } finally {
-        tempDirectory.toFile().deleteRecursively()
     }
 }

@@ -11,7 +11,7 @@ fun osInfo(output: PrintWriter) {
     val memory = hardware.memory
     val uptimeSeconds = os.systemUptime
 
-    output.println("=== OPERATING SYSTEM INFORMATION ===")
+    output.println("\n=== OPERATING SYSTEM INFORMATION ===")
     output.println("OS Family: ${os.family}")
     output.println("Manufacturer: ${os.manufacturer}")
     output.println("Version :${os.versionInfo}")

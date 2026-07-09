@@ -1,3 +1,4 @@
+import java.io.DataInputStream
 import java.io.IOException
 import java.io.PrintWriter
 import java.net.Socket
@@ -5,7 +6,6 @@ import java.time.format.DateTimeFormatter
 import java.net.http.HttpClient
 
 fun handleClient(socket: Socket) {
-
     val clientId = socket.remoteSocketAddress.toString()
     val httpClient = HttpClient.newHttpClient()
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
@@ -13,60 +13,74 @@ fun handleClient(socket: Socket) {
     println("[Client $clientId] connected to the server")
 
     try {
-        val input = socket.getInputStream().bufferedReader()
+        val dataIn = DataInputStream(socket.getInputStream())
         val output = PrintWriter(socket.getOutputStream(), true)
 
-        sendMenu(output)
-
         while (true) {
-            val rawLine = input.readLine() ?: break
-            val parts = rawLine.trim().split(Regex("\\s+"), limit = 2)
+            val rawLine = readLine(dataIn) ?: break
+            if (rawLine.isBlank()) continue
+
+            val parts = rawLine.trim().split(Regex("\\s+"))
             val command = parts[0].uppercase()
-            val argument = if (parts.size > 1) parts[1] else ""
 
             println("[Client $clientId] Requested command: $command")
 
-            when (command) {
-                "HELP" -> sendMenu(output)
+            if (command == "EXIT") {
+                break
+            }
 
+            when (command) {
                 "TIME" -> {
-                    output.println(
-                        "Current server date and time: ${java.time.LocalDate.now()}, ${
-                            java.time.LocalTime.now().format(timeFormatter)
-                        }\n"
-                    )
+                    output.println("Current server date and time: ${java.time.LocalDate.now()}, ${java.time.LocalTime.now().format(timeFormatter)}")
                 }
 
                 "OS" -> osInfo(output)
 
                 "WEATHER" -> {
-                    val regex = """("[^"]*")|\S+""".toRegex()
-                    val parts = regex.findAll(rawLine).map { it.value }.toList()
-                    handleWeatherInput(parts, clientId, httpClient, output)
+                    val args = rawLine.substringAfter(' ').trim()
+                    handleWeatherInput(args, clientId, httpClient, output)
                 }
 
-                "ZIP" -> {
-                    if (argument.isNotBlank()) {
-                        handleZip(argument, output)
+                "COMPILE_ZIP" -> {
+                    val sizeLine = readLine(dataIn) ?: break
+                    val fileSize = sizeLine.toLongOrNull()
+
+                    if (fileSize != null && fileSize > 0) {
+                        handleZip(dataIn, fileSize, output)
                     } else {
-                        output.println("You must provide a path")
+                        output.println("ERROR: Malformed file size parameter payload.")
                     }
                 }
 
-                "EXIT" -> {
-                    output.println("Disconnecting. Goodbye!")
-                    break
-                }
-
                 else -> {
-                    output.println("Unknown command $rawLine. Type 'HELP' for menu\n")
+                    output.println("ERROR: Unknown API command $command")
                 }
             }
+
+            output.println("END")
+            output.flush()
         }
+
     } catch (e: IOException) {
-        println("Connection error: ${e.message}")
+        println("[Client $clientId] Connection error: ${e.message}")
     } finally {
         socket.close()
         println("[Client $clientId] Connection closed")
     }
+}
+
+fun readLine(dataIn: DataInputStream): String? {
+    val sb = StringBuilder()
+    while (true) {
+        val b = dataIn.read()
+        if (b == -1) {
+            if (sb.isEmpty()) return null // Stream închis complet
+            break
+        }
+        if (b == '\n'.code) break
+        if (b != '\r'.code) {
+            sb.append(b.toChar())
+        }
+    }
+    return sb.toString()
 }

@@ -5,6 +5,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.io.File
+import java.net.URLEncoder
 
 @Serializable
 data class Current(val temperature_2m: Double, val weather_code: Int)
@@ -44,21 +45,15 @@ fun weatherInfo(client: HttpClient, lat: String, long: String): String {
 data class City(val lat: String, val lon: String)
 
 fun weatherInfo(client: HttpClient, city: String): String {
-
     val file = File("API_KEY.txt")
-    val pattern = Regex("""^("[a-zA-Z -]+"|[a-zA-Z-]+)$""")
-
     return try {
         val key = file.bufferedReader().use { it.readLine() }
-        var cityName = ""
+        val cityName = city.trim().removeSurrounding("\"")
+        if (cityName.isBlank()) return "Incorrect city name.\n"
 
-        if (pattern.matches(city)) {
-            cityName = city.replace(" ", "").replace("\"", "")
-        } else {
-            return "Incorrect format.\n"
-        }
+        val encodedCity = URLEncoder.encode(cityName, "UTF-8")
+        val addressUrl = "https://geocode.maps.co/search?q=$encodedCity&api_key=$key"
 
-        val addressUrl = "https://geocode.maps.co/search?q=$cityName&api_key=$key"
         val request = HttpRequest.newBuilder().uri(URI.create(addressUrl)).GET().build()
         val response = client.send(request, HttpResponse.BodyHandlers.ofString())
 
@@ -67,17 +62,15 @@ fun weatherInfo(client: HttpClient, city: String): String {
             return "Incorrect city name.\n"
         }
 
-        val jsonConfig = Json {
-            ignoreUnknownKeys = true
-        }
-
-        val body = response.body()
-        val data: List<City> = jsonConfig.decodeFromString<List<City>>(body)
+        val jsonConfig = Json { ignoreUnknownKeys = true }
+        val data: List<City> = jsonConfig.decodeFromString(response.body())
         val lat = data[0].lat
         val long = data[0].lon
-
         weatherInfo(client, lat, long)
     } catch (e: Exception) {
-        "Error retrieving weather data: ${e.message}"
+        if (e is java.io.FileNotFoundException)
+            "Error: API_KEY.txt not found. Please place your geocode.maps.co API key in that file."
+        else
+            "Error retrieving weather data: ${e.message}"
     }
 }
