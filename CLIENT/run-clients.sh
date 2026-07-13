@@ -14,7 +14,7 @@ fi
 TOTAL_CLIENTS=100
 
 echo "It launches $TOTAL_CLIENTS instances"
-echo "Instances run in non-inter100%active mode"
+echo "Instances run in non-interactive mode"
 echo "----------------------------------------"
 
 for ((i=1; i<=TOTAL_CLIENTS; i++))
