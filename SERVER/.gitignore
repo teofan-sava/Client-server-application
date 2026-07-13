@@ -2,6 +2,7 @@
 .gradle/
 build/
 gradle/wrapper
+.kotlin/
 
 # Local configuration files
 .env
