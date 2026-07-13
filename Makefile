@@ -2,13 +2,20 @@
 
 SERVER_PORT ?= 12345
 
+SERVER_JAR := SERVER/build/libs/SERVER.jar
+CLIENT_JAR := CLIENT/build/libs/client.jar
+
 all: server client
 
-server:
+server: $(SERVER_JAR)
+
+$(SERVER_JAR):
 	@echo "Building server application..."
 	cd SERVER && ./gradlew build -x test
 
-client:
+client: $(CLIENT_JAR)
+
+$(CLIENT_JAR):
 	@echo "Building client application..."
 	cd CLIENT && ./gradlew build -x test
 

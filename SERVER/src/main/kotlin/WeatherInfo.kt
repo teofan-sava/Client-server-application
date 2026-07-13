@@ -8,10 +8,10 @@ import java.io.File
 import java.net.URLEncoder
 
 @Serializable
-data class Current(val temperature_2m: Double, val weather_code: Int)
+data class CurrentWeatherState(val temperature_2m: Double, val weather_code: Int)
 
 @Serializable
-data class Weather(val latitude: Double, val longitude: Double, val current: Current)
+data class Weather(val latitude: Double, val longitude: Double, val current: CurrentWeatherState)
 
 fun weatherInfo(client: HttpClient, lat: String, long: String): String {
 
