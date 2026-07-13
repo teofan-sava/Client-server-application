@@ -4,7 +4,7 @@ PORT=${1:-8080}
 
 cities=("Iasi" "New York" "Barcelona")
 
-ZIP_PATH="/home/teofan/test.zip"
+ZIP_PATH="TEST_ZIP/test.zip"
 
 if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
   echo "ERROR: '$PORT' is not a valid number"
