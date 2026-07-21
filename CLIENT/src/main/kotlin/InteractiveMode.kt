@@ -6,8 +6,10 @@ import java.net.Socket
 fun runInteractiveMode(port: Int) {
     menuDisplay()
 
+    val host = System.getenv("SERVER_HOST") ?: "localhost"
+
     try {
-        Socket("localhost", port).use { socket ->
+        Socket(host, port).use { socket ->
             val out = PrintWriter(socket.getOutputStream(), true)
             val reader = BufferedReader(InputStreamReader(socket.getInputStream()))
             val rawBinaryOut = socket.getOutputStream()

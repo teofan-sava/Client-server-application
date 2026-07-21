@@ -17,4 +17,4 @@ echo "The server starts on port $PORT"
 echo "Press CTRL+C to stop the server"
 echo "-------------------------------"
 
-./gradlew run --args="$PORT"
+exec java -jar server.jar "$PORT"
