@@ -25,8 +25,6 @@ COPY run-server.sh ./run-server.sh
 
 RUN chmod +x ./run-server.sh
 
-EXPOSE 8080
-
 ENV PORT=12345
 
 CMD ["bash", "-c", "./run-server.sh $PORT"]
