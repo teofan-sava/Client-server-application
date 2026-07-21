@@ -14,8 +14,10 @@ fun sendZipPayload(port: Int, zipFilePath: String) {
 
     println("Preparing to upload archive: ${file.name} (${file.length()} bytes)")
 
+    val host = System.getenv("SERVER_HOST") ?: "localhost"
+
     try {
-        Socket("localhost", port).use { socket ->
+        Socket(host, port).use { socket ->
             val textOut = PrintWriter(socket.getOutputStream(), true)
             val rawBinaryOut = socket.getOutputStream()
 
