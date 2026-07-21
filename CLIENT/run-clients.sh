@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-PORT=${1:-8080}
+PORT=${1:-12345}
 
 cities=("Iasi" "New York" "Barcelona")
 
